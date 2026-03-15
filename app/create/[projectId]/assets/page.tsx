@@ -51,6 +51,26 @@ export default function AssetStudioPage() {
     if (projectId) loadAssets();
   }, [projectId]);
 
+  // Pick up pre-filled suggestion from script page
+  const [pendingBanner, setPendingBanner] = useState<string | null>(null);
+  useEffect(() => {
+    const raw = localStorage.getItem('pending_asset_suggestion');
+    if (!raw) return;
+    try {
+      const s = JSON.parse(raw) as {
+        prompt: string; type: 'character' | 'background' | 'prop';
+        tag: string; name: string; description: string;
+      };
+      setPrompt(s.prompt ?? '');
+      setActiveTab(s.type ?? 'character');
+      setTag(s.tag ?? '@');
+      setAssetName(s.name ?? '');
+      setDescription(s.description ?? '');
+      setPendingBanner(`✦ Pre-filled from script: "${s.name}" (${s.type})`);
+      localStorage.removeItem('pending_asset_suggestion');
+    } catch { /* ignore */ }
+  }, []);
+
   async function handleGenerate() {
     if (!prompt.trim()) return;
     setGenerating(true);
@@ -142,6 +162,14 @@ export default function AssetStudioPage() {
                 Powered by FLUX.1-dev
               </span>
             </div>
+
+            {/* Pre-filled from script page banner */}
+            {pendingBanner && (
+              <div style={{ padding: '0.6rem 1rem', background: 'var(--ink)', color: 'var(--paper)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                <span>{pendingBanner}</span>
+                <button onClick={() => setPendingBanner(null)} style={{ background: 'none', border: 'none', color: 'var(--paper)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+              </div>
+            )}
 
             {/* Tab Row */}
             <div style={{ display: 'flex', gap: '0', marginBottom: '1.5rem', borderBottom: '3px solid var(--ink)' }}>
