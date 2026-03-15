@@ -1,0 +1,321 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts ───────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+JP:wght@400;500;700&family=Kalam:wght@400;700&family=Special+Elite&display=swap');
+
+/* ─── CSS Design System ──────────────────────────────────────────────────── */
+:root {
+  --ink: #0a0a0a;
+  --paper: #f7f4ee;
+  --gray: #e0dbd0;
+  --midgray: #999999;
+  --accent: #e63030;
+  --accent2: #1a1aff;
+  --success: #22c55e;
+  --border: 3px solid #0a0a0a;
+  --shadow: 5px 5px 0px #0a0a0a;
+  --font-display: 'Bangers', cursive;
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-bubble: 'Kalam', cursive;
+  --font-tag: 'Special Elite', monospace;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+/* ─── Halftone Dot Background Pattern ───────────────────────────────────── */
+.halftone {
+  background-image: radial-gradient(circle, #d0cbc0 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+/* ─── Ink Border Panel ───────────────────────────────────────────────────── */
+.ink-border {
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.ink-border-sm {
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0px var(--ink);
+}
+
+/* ─── Comic Panel ────────────────────────────────────────────────────────── */
+.comic-panel {
+  border: 3px solid var(--ink);
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px var(--ink);
+}
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--ink);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+}
+.btn-secondary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px var(--ink);
+}
+.btn-secondary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--ink);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  text-decoration: none;
+}
+.btn-ghost:hover {
+  border-color: var(--ink);
+}
+
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background-color: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+}
+.btn-ink:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px var(--accent);
+}
+
+/* ─── Input Fields ───────────────────────────────────────────────────────── */
+.inp {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 3px solid var(--ink);
+  background: white;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow 0.15s;
+}
+.inp:focus {
+  box-shadow: 4px 4px 0px var(--accent2);
+}
+
+/* ─── Genre / Tag Chips ──────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.75rem;
+  border: 2px solid var(--ink);
+  font-family: var(--font-tag);
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: white;
+  color: var(--ink);
+  transition: background 0.1s, color 0.1s;
+}
+.chip.selected, .chip:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ─── Badge ──────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-tag);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid currentColor;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Speech Bubble ──────────────────────────────────────────────────────── */
+.speech-bubble {
+  position: absolute;
+  background: white;
+  border: 3px solid var(--ink);
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-bubble);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  max-width: 180px;
+  text-align: center;
+  border-radius: 12px;
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  left: 20px;
+  width: 0;
+  border-left: 8px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 14px solid var(--ink);
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 22px;
+  width: 0;
+  border-left: 6px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 11px solid white;
+  z-index: 1;
+}
+
+/* ─── SFX Text ───────────────────────────────────────────────────────────── */
+.sfx-text {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--accent);
+  -webkit-text-stroke: 2px var(--ink);
+  transform: rotate(-8deg);
+  pointer-events: none;
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+/* ─── Step Indicator ─────────────────────────────────────────────────────── */
+.step-circle {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.step-circle.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.step-circle.done {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────────── */
+.comic-card {
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  background: white;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.comic-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px var(--ink);
+}
+
+/* ─── Loading Spinner ────────────────────────────────────────────────────── */
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--gray);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
+.toast {
+  padding: 0.75rem 1rem;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  max-width: 340px;
+}
+
+/* ─── Misc Utilities ─────────────────────────────────────────────────────── */
+.text-balance { text-wrap: balance; }
+.font-display { font-family: var(--font-display); }
+.font-bubble  { font-family: var(--font-bubble); }
+.font-tag     { font-family: var(--font-tag); }
+
