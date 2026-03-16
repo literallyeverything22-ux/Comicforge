@@ -39,6 +39,7 @@ export default function PanelBuilderPage() {
   const [finalized, setFinalized] = useState(false);
   const [error, setError] = useState('');
   const [pageNumber] = useState(1);
+  const [visibleScriptCount, setVisibleScriptCount] = useState(0);
 
   // Load script and assets on mount
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function PanelBuilderPage() {
     }));
     setPanels(newPanels);
     setActivePanel(0);
+    setVisibleScriptCount(newPanels.length + 5);
   }, [template, scriptLines]);
 
   async function generatePanel(panelIdx: number) {
@@ -155,6 +157,10 @@ export default function PanelBuilderPage() {
     ));
   }
 
+  function updatePanelScriptRef(panelIdx: number, newRef: string) {
+    setPanels(prev => prev.map((p, i) => i === panelIdx ? { ...p, script_ref: newRef } : p));
+  }
+
   async function finalizePage() {
     setSaving(true);
     setError('');
@@ -224,7 +230,16 @@ export default function PanelBuilderPage() {
 
             {/* Comic Page */}
             <div className="comic-panel" style={{ width: '100%', maxWidth: '520px', background: 'white' }}>
-              <PageLayout template={template} panels={panels} activePanel={activePanel} generating={generating} onPanelClick={setActivePanel} onGenerate={generatePanel} onRemoveBubble={removeBubble} />
+              <PageLayout
+                template={template}
+                panels={panels}
+                activePanel={activePanel}
+                generating={generating}
+                onPanelClick={setActivePanel}
+                onGenerate={generatePanel}
+                onRemoveBubble={removeBubble}
+                onPromptChange={updatePanelScriptRef}
+              />
             </div>
 
             {/* Finalize / Next */}
@@ -245,7 +260,7 @@ export default function PanelBuilderPage() {
             <h3 style={{ fontFamily: 'var(--font-tag)', fontSize: '0.75rem', color: 'var(--midgray)', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>SCRIPT</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              {scriptLines.map((line, idx) => (
+              {scriptLines.slice(0, visibleScriptCount).map((line, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActivePanel(Math.min(idx, panels.length - 1))}
@@ -262,6 +277,15 @@ export default function PanelBuilderPage() {
                   <strong>P{line.panel}</strong> — {line.scene.slice(0, 60)}...
                 </button>
               ))}
+              {visibleScriptCount < scriptLines.length && (
+                <button
+                  className="btn-secondary"
+                  onClick={() => setVisibleScriptCount(prev => prev + 5)}
+                  style={{ fontSize: '0.8rem', padding: '0.5rem', width: '100%' }}
+                >
+                  ↓ Load More Script
+                </button>
+              )}
             </div>
 
             {/* Active Assets */}
@@ -347,7 +371,7 @@ function TemplatePreview({ id, selected }: { id: TemplateId; selected: boolean }
 }
 
 // ─── Page Layout Grid ─────────────────────────────────────────────────────────
-function PageLayout({ template, panels, activePanel, generating, onPanelClick, onGenerate, onRemoveBubble }: {
+function PageLayout({ template, panels, activePanel, generating, onPanelClick, onGenerate, onRemoveBubble, onPromptChange }: {
   template: TemplateId;
   panels: Panel[];
   activePanel: number;
@@ -355,6 +379,7 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
   onPanelClick: (idx: number) => void;
   onGenerate: (idx: number) => void;
   onRemoveBubble: (panelIdx: number, bubbleId: string) => void;
+  onPromptChange: (idx: number, newPrompt: string) => void;
 }) {
   const gridStyles: Record<TemplateId, React.CSSProperties> = {
     twobytwo:   { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' },
@@ -381,13 +406,30 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
     >
       {/* Halftone placeholder */}
       {!panels[idx]?.image_url && !generating[idx] && (
-        <div className="halftone" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="halftone" style={{ position: 'absolute', inset: 0, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--midgray)', fontFamily: 'var(--font-tag)' }}>Panel {idx + 1}</span>
+          
+          {/* Editable prompt inside the panel */}
+          <textarea
+            className="inp"
+            value={panels[idx]?.script_ref || ''}
+            onChange={(e) => onPromptChange(idx, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              width: '100%', 
+              height: '80px', 
+              resize: 'none', 
+              fontSize: '0.75rem',
+              background: 'rgba(255,255,255,0.9)'
+            }}
+            placeholder="Describe what happens in this panel..."
+          />
+          
           <button
             id={`generate-panel-${idx}`}
             className="btn-secondary"
             onClick={e => { e.stopPropagation(); onGenerate(idx); }}
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', marginTop: 'auto' }}
           >
             ✦ Generate
           </button>
@@ -443,7 +485,16 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
       <div style={{ minHeight: '400px' }}>
         <div style={{ position: 'relative', borderBottom: '3px solid var(--ink)', minHeight: '200px', background: panels[0]?.image_url ? `url(${panels[0].image_url}) center/cover` : 'var(--gray)', cursor: 'pointer', outline: activePanel === 0 ? '3px solid var(--accent)' : 'none', outlineOffset: '-3px', overflow: 'hidden' }} onClick={() => onPanelClick(0)}>
           {!panels[0]?.image_url && !generating[0] && (
-            <div className="halftone" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <div className="halftone" style={{ position: 'absolute', inset: 0, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--midgray)', fontFamily: 'var(--font-tag)' }}>Panel 1</span>
+              <textarea
+                className="inp"
+                value={panels[0]?.script_ref || ''}
+                onChange={(e) => onPromptChange(0, e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                style={{ width: '80%', height: '80px', resize: 'none', fontSize: '0.75rem', background: 'rgba(255,255,255,0.9)' }}
+                placeholder="Describe what happens in this panel..."
+              />
               <button id="generate-panel-0" className="btn-secondary" onClick={e => { e.stopPropagation(); onGenerate(0); }} style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>✦ Generate</button>
             </div>
           )}

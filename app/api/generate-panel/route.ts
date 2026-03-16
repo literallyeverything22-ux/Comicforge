@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { scriptLine, assets, style, panelPosition } = body;
+    const { scriptLine, assets, style } = body;
 
     if (!scriptLine?.scene) {
       return NextResponse.json({ error: 'Missing scriptLine.scene' }, { status: 400 });
