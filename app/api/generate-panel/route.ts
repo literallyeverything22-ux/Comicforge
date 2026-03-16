@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
       const base64 = assetWithRef.referenceUrl.replace(/^data:image\/\w+;base64,/, '');
       imageUrl = await generateImageFromReference(prompt, base64);
     } else {
-      const dims = panelPosition === 'wide' ? { w: 768, h: 512 } : panelPosition === 'tall' ? { w: 512, h: 768 } : { w: 512, h: 512 };
+      // SDXL requires width and height >= 1024. We generate squares and let frontend object-cover handle the panel aspect ratio.
+      const dims = { w: 1024, h: 1024 };
       const images = await generateImages(prompt, 1, dims.w, dims.h);
       imageUrl = images[0];
     }
