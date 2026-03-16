@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const compositePrompt = buildAssetPrompt(prompt, style ?? 'manga');
-    const images = await generateImages(compositePrompt, 4, 512, 512);
+    const images = await generateImages(compositePrompt, 4, 1024, 1024);
 
     return NextResponse.json({ images });
   } catch (err: unknown) {
