@@ -50,7 +50,12 @@ export default function PanelBuilderPage() {
       ]);
       if (projectRes.ok) {
         const { project } = await projectRes.json();
-        if (project?.script?.script) setScriptLines(project.script.script);
+        if (project?.script?.script && Array.isArray(project.script.script)) {
+          setScriptLines(project.script.script);
+        } else {
+           // Graceful fallback if user skipped script generation
+           setScriptLines([]);
+        }
       }
       if (assetsRes.ok) {
         const { assets: a } = await assetsRes.json();
