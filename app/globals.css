@@ -207,9 +207,46 @@ h1, h2, h3, h4 {
   letter-spacing: 0.04em;
 }
 
-/* ─── Speech Bubble ──────────────────────────────────────────────────────── */
+/* ─── Overlays & Delete Button ─────────────────────────────────────────────── */
+.overlay-delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ink);
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 20;
+}
+.speech-bubble:hover .overlay-delete-btn,
+.sfx-wrapper:hover .overlay-delete-btn {
+  opacity: 1;
+}
+
+/* ─── Speech Bubble Base ─────────────────────────────────────────────────── */
 .speech-bubble {
   position: absolute;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  z-index: 10;
+  text-align: center;
+}
+.speech-bubble:active, .sfx-wrapper:active {
+  cursor: grabbing;
+}
+
+/* 1. Speech (Rounded Rect + Tail) */
+.bubble-speech {
   background: white;
   border: 3px solid var(--ink);
   padding: 0.4rem 0.75rem;
@@ -218,10 +255,9 @@ h1, h2, h3, h4 {
   font-weight: 700;
   line-height: 1.3;
   max-width: 180px;
-  text-align: center;
   border-radius: 12px;
 }
-.speech-bubble::after {
+.bubble-speech::after {
   content: '';
   position: absolute;
   bottom: -14px;
@@ -231,7 +267,7 @@ h1, h2, h3, h4 {
   border-right: 4px solid transparent;
   border-top: 14px solid var(--ink);
 }
-.speech-bubble::before {
+.bubble-speech::before {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -243,9 +279,65 @@ h1, h2, h3, h4 {
   z-index: 1;
 }
 
-/* ─── SFX Text ───────────────────────────────────────────────────────────── */
-.sfx-text {
+/* 2. Thought (Cloud-like + Dashed border + Italic) */
+.bubble-thought {
+  background: white;
+  border: 3px dashed var(--ink);
+  padding: 0.6rem 1rem;
+  font-family: var(--font-bubble);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.3;
+  border-radius: 50%;
+  max-width: 200px;
+}
+.bubble-thought::after {
+  content: '';
   position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 3px dashed var(--ink);
+  border-radius: 50%;
+}
+.bubble-thought::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 10px;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border: 3px dashed var(--ink);
+  border-radius: 50%;
+}
+
+/* 3. Caption (Black bar + White text + No tail) */
+.bubble-caption {
+  background: var(--ink);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  max-width: 90%;
+}
+
+/* ─── SFX Overlay ────────────────────────────────────────────────────────── */
+.sfx-wrapper {
+  position: absolute;
+  z-index: 10;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.sfx-text {
   font-family: var(--font-display);
   font-size: 2.5rem;
   color: var(--accent);
@@ -253,6 +345,7 @@ h1, h2, h3, h4 {
   transform: rotate(-8deg);
   pointer-events: none;
   text-shadow: 3px 3px 0 var(--ink);
+  white-space: nowrap;
 }
 
 /* ─── Step Indicator ─────────────────────────────────────────────────────── */

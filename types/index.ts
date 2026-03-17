@@ -65,6 +65,8 @@ export interface Panel {
   script_ref: string;
   speech_bubbles: SpeechBubble[];
   sfx_text: string | null;
+  sfx_x?: number;
+  sfx_y?: number;
   active_assets: string[]; // asset tags
 }
 

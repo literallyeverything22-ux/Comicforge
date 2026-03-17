@@ -128,11 +128,14 @@ export default function PanelBuilderPage() {
 
   function addSpeechBubble() {
     if (!bubbleText.trim()) return;
+    const bubbleCount = panels[activePanel]?.speech_bubbles.length || 0;
     const bubble: SpeechBubble = {
       id: `bubble-${Date.now()}`,
       text: bubbleText,
       position: 'top-right',
       type: bubbleType,
+      x: 10 + (bubbleCount * 6), // Offset each new bubble by 6% to prevent stacking
+      y: 10 + (bubbleCount * 6),
     };
     setPanels(prev => prev.map((p, i) => i === activePanel
       ? { ...p, speech_bubbles: [...p.speech_bubbles, bubble] }
@@ -143,8 +146,25 @@ export default function PanelBuilderPage() {
 
   function addSfx() {
     if (!sfxInput.trim()) return;
-    setPanels(prev => prev.map((p, i) => i === activePanel ? { ...p, sfx_text: sfxInput.toUpperCase() } : p));
+    setPanels(prev => prev.map((p, i) => i === activePanel ? { 
+      ...p, 
+      sfx_text: sfxInput.toUpperCase(),
+      sfx_x: 50,
+      sfx_y: 50,
+    } : p));
     setSfxInput('');
+  }
+
+  function updateOverlayPosition(panelIdx: number, type: 'bubble' | 'sfx', id: string | null, x: number, y: number) {
+    setPanels(prev => prev.map((p, i) => {
+      if (i !== panelIdx) return p;
+      if (type === 'sfx') return { ...p, sfx_x: x, sfx_y: y };
+      return { ...p, speech_bubbles: p.speech_bubbles.map(b => b.id === id ? { ...b, x, y } : b) };
+    }));
+  }
+
+  function removeSfx(panelIdx: number) {
+    setPanels(prev => prev.map((p, i) => i === panelIdx ? { ...p, sfx_text: null } : p));
   }
 
   function toggleAsset(tag: string) {
@@ -243,6 +263,8 @@ export default function PanelBuilderPage() {
                 onPanelClick={setActivePanel}
                 onGenerate={generatePanel}
                 onRemoveBubble={removeBubble}
+                onRemoveSfx={removeSfx}
+                onUpdateOverlayPosition={updateOverlayPosition}
                 onPromptChange={updatePanelScriptRef}
               />
             </div>
@@ -376,7 +398,7 @@ function TemplatePreview({ id, selected }: { id: TemplateId; selected: boolean }
 }
 
 // ─── Page Layout Grid ─────────────────────────────────────────────────────────
-function PageLayout({ template, panels, activePanel, generating, onPanelClick, onGenerate, onRemoveBubble, onPromptChange }: {
+function PageLayout({ template, panels, activePanel, generating, onPanelClick, onGenerate, onRemoveBubble, onRemoveSfx, onUpdateOverlayPosition, onPromptChange }: {
   template: TemplateId;
   panels: Panel[];
   activePanel: number;
@@ -384,8 +406,67 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
   onPanelClick: (idx: number) => void;
   onGenerate: (idx: number) => void;
   onRemoveBubble: (panelIdx: number, bubbleId: string) => void;
+  onRemoveSfx: (panelIdx: number) => void;
+  onUpdateOverlayPosition: (panelIdx: number, type: 'bubble' | 'sfx', id: string | null, x: number, y: number) => void;
   onPromptChange: (idx: number, newPrompt: string) => void;
 }) {
+  const [dragInfo, setDragInfo] = useState<{
+    type: 'bubble' | 'sfx';
+    panelIdx: number;
+    id: string | null;
+    startX: number;
+    startY: number;
+    initialPercentX: number;
+    initialPercentY: number;
+    panelRect: DOMRect;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!dragInfo) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      e.preventDefault();
+      const dx = e.clientX - dragInfo.startX;
+      const dy = e.clientY - dragInfo.startY;
+      
+      const percentX = dragInfo.initialPercentX + (dx / dragInfo.panelRect.width) * 100;
+      const percentY = dragInfo.initialPercentY + (dy / dragInfo.panelRect.height) * 100;
+      
+      onUpdateOverlayPosition(
+        dragInfo.panelIdx, 
+        dragInfo.type, 
+        dragInfo.id, 
+        Math.max(0, Math.min(100, percentX)),
+        Math.max(0, Math.min(100, percentY))
+      );
+    };
+
+    const handlePointerUp = () => setDragInfo(null);
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [dragInfo, onUpdateOverlayPosition]);
+
+  const startDrag = (e: React.PointerEvent, panelIdx: number, type: 'bubble' | 'sfx', id: string | null, cx: number, cy: number) => {
+    e.stopPropagation();
+    const panelEl = (e.currentTarget as HTMLElement).closest('.comic-panel-container') as HTMLElement;
+    if (!panelEl) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setDragInfo({
+      type,
+      panelIdx,
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPercentX: cx,
+      initialPercentY: cy,
+      panelRect: panelEl.getBoundingClientRect()
+    });
+  };
   const gridStyles: Record<TemplateId, React.CSSProperties> = {
     twobytwo:   { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' },
     splash_2:   { display: 'grid', gridTemplateRows: '1.5fr 1fr', gridTemplateColumns: '1fr' },
@@ -396,6 +477,7 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
   const renderPanels = (panelIndices: number[]) => panelIndices.map(idx => (
     <div
       key={idx}
+      className="comic-panel-container"
       onClick={() => onPanelClick(idx)}
       style={{
         position: 'relative',
@@ -457,29 +539,54 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
 
       {/* SFX Text */}
       {panels[idx]?.sfx_text && (
-        <div className="sfx-text" style={{ top: '0.5rem', left: '0.5rem', fontSize: '1.5rem' }}>
-          {panels[idx].sfx_text}
-        </div>
-      )}
-
-      {/* Speech Bubbles */}
-      {panels[idx]?.speech_bubbles.map(bubble => (
-        <div
-          key={bubble.id}
-          className="speech-bubble"
-          style={{ top: '0.5rem', right: '0.5rem', position: 'absolute', zIndex: 10 }}
-          onClick={e => e.stopPropagation()}
-          title="Click × to remove"
+        <div 
+          className="sfx-wrapper" 
+          style={{ 
+            top: `${panels[idx].sfx_y ?? 50}%`, 
+            left: `${panels[idx].sfx_x ?? 50}%`, 
+            transform: 'translate(-50%, -50%)',
+          }}
+          onPointerDown={(e) => startDrag(e, idx, 'sfx', null, panels[idx].sfx_x ?? 50, panels[idx].sfx_y ?? 50)}
         >
-          {bubble.text}
+          <div className="sfx-text" style={{ position: 'relative' }}>{panels[idx].sfx_text}</div>
           <button
-            onClick={() => onRemoveBubble(idx, bubble.id)}
-            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', border: '2px solid var(--ink)', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+            className="overlay-delete-btn"
+            onClick={(e) => { e.stopPropagation(); onRemoveSfx(idx); }}
+            title="Remove SFX"
+            onPointerDown={e => e.stopPropagation()}
           >
             ✕
           </button>
         </div>
-      ))}
+      )}
+
+      {/* Speech Bubbles */}
+      {panels[idx]?.speech_bubbles.map(bubble => {
+        const typeClass = bubble.type === 'thought' ? 'bubble-thought' : bubble.type === 'caption' ? 'bubble-caption' : 'bubble-speech';
+        return (
+          <div
+            key={bubble.id}
+            className={`speech-bubble ${typeClass}`}
+            style={{ 
+              top: `${bubble.y ?? 10}%`, 
+              left: `${bubble.x ?? 10}%`, 
+              transform: 'translate(-50%, -50%)',
+            }}
+            onPointerDown={(e) => startDrag(e, idx, 'bubble', bubble.id, bubble.x ?? 10, bubble.y ?? 10)}
+            onClick={e => e.stopPropagation()}
+          >
+            {bubble.text}
+            <button
+              className="overlay-delete-btn"
+              onClick={(e) => { e.stopPropagation(); onRemoveBubble(idx, bubble.id); }}
+              title="Remove Bubble"
+              onPointerDown={e => e.stopPropagation()}
+            >
+              ✕
+            </button>
+          </div>
+        );
+      })}
     </div>
   ));
 
@@ -488,7 +595,7 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
   if (template === 'splash_2') {
     return (
       <div style={{ minHeight: '400px' }}>
-        <div style={{ position: 'relative', borderBottom: '3px solid var(--ink)', minHeight: '200px', background: panels[0]?.image_url ? `url(${panels[0].image_url}) center/cover` : 'var(--gray)', cursor: 'pointer', outline: activePanel === 0 ? '3px solid var(--accent)' : 'none', outlineOffset: '-3px', overflow: 'hidden' }} onClick={() => onPanelClick(0)}>
+        <div className="comic-panel-container" style={{ position: 'relative', borderBottom: '3px solid var(--ink)', minHeight: '200px', background: panels[0]?.image_url ? `url(${panels[0].image_url}) center/cover` : 'var(--gray)', cursor: 'pointer', outline: activePanel === 0 ? '3px solid var(--accent)' : 'none', outlineOffset: '-3px', overflow: 'hidden' }} onClick={() => onPanelClick(0)}>
           {!panels[0]?.image_url && !generating[0] && (
             <div className="halftone" style={{ position: 'absolute', inset: 0, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--midgray)', fontFamily: 'var(--font-tag)' }}>Panel 1</span>
@@ -504,10 +611,35 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
             </div>
           )}
           {generating[0] && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(247,244,238,0.9)' }}><span className="spinner" style={{ width: '2rem', height: '2rem' }} /></div>}
-          {panels[0]?.sfx_text && <div className="sfx-text" style={{ top: '0.5rem', left: '0.5rem', fontSize: '1.5rem' }}>{panels[0].sfx_text}</div>}
-          {panels[0]?.speech_bubbles.map(b => (
-            <div key={b.id} className="speech-bubble" style={{ top: '0.5rem', right: '0.5rem', position: 'absolute' }} onClick={e => e.stopPropagation()}>{b.text}</div>
-          ))}
+          {panels[0]?.sfx_text && (
+            <div 
+              className="sfx-wrapper" 
+              style={{ 
+                top: `${panels[0].sfx_y ?? 50}%`, 
+                left: `${panels[0].sfx_x ?? 50}%`, 
+                transform: 'translate(-50%, -50%)',
+              }}
+              onPointerDown={(e) => startDrag(e, 0, 'sfx', null, panels[0].sfx_x ?? 50, panels[0].sfx_y ?? 50)}
+            >
+              <div className="sfx-text" style={{ position: 'relative' }}>{panels[0].sfx_text}</div>
+              <button className="overlay-delete-btn" onClick={(e) => { e.stopPropagation(); onRemoveSfx(0); }} onPointerDown={e => e.stopPropagation()}>✕</button>
+            </div>
+          )}
+          {panels[0]?.speech_bubbles.map(b => {
+            const typeClass = b.type === 'thought' ? 'bubble-thought' : b.type === 'caption' ? 'bubble-caption' : 'bubble-speech';
+            return (
+              <div
+                key={b.id}
+                className={`speech-bubble ${typeClass}`}
+                style={{ top: `${b.y ?? 10}%`, left: `${b.x ?? 10}%`, transform: 'translate(-50%, -50%)' }}
+                onPointerDown={(e) => startDrag(e, 0, 'bubble', b.id, b.x ?? 10, b.y ?? 10)}
+                onClick={e => e.stopPropagation()}
+              >
+                {b.text}
+                <button className="overlay-delete-btn" onClick={(e) => { e.stopPropagation(); onRemoveBubble(0, b.id); }} onPointerDown={e => e.stopPropagation()}>✕</button>
+              </div>
+            );
+          })}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
           {renderPanels([1, 2])}
