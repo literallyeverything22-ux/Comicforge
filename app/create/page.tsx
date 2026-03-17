@@ -148,18 +148,32 @@ function CreatePageInner() {
     setSuggestions(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   }
 
-  function sendToAssetStudio(suggestion: AssetSuggestion) {
-    // Store in localStorage for the Asset Studio to pick up
-    const pending = JSON.parse(localStorage.getItem('pending_asset_suggestion') ?? 'null');
-    void pending; // just overwrite
-    localStorage.setItem('pending_asset_suggestion', JSON.stringify({
-      prompt: suggestion.prompt,
-      type: suggestion.type,
-      tag: suggestion.tag,
-      name: suggestion.name,
-      description: suggestion.description,
-    }));
-    router.push(`/create/${projectId}/assets`);
+  async function sendToAssetStudio(suggestion: AssetSuggestion) {
+    if (!projectId || !script) return;
+    setSavingNext(true); // Share loading state so UI indicates saving
+
+    try {
+      // First save the script
+      await fetch('/api/save-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, script: { ...script, script: editedLines } }),
+      });
+
+      // Then setup the asset suggestion
+      localStorage.setItem('pending_asset_suggestion', JSON.stringify({
+        prompt: suggestion.prompt,
+        type: suggestion.type,
+        tag: suggestion.tag,
+        name: suggestion.name,
+        description: suggestion.description,
+      }));
+
+      router.push(`/create/${projectId}/assets`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save script.');
+      setSavingNext(false);
+    }
   }
 
   return (
