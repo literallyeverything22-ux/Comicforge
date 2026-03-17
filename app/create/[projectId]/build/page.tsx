@@ -31,6 +31,7 @@ export default function PanelBuilderPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [activePanel, setActivePanel] = useState(0);
+  const [focusedPanel, setFocusedPanel] = useState<number | null>(null);
   const [generating, setGenerating] = useState<Record<number, boolean>>({});
   const [sfxInput, setSfxInput] = useState('');
   const [bubbleText, setBubbleText] = useState('');
@@ -259,8 +260,10 @@ export default function PanelBuilderPage() {
                 template={template}
                 panels={panels}
                 activePanel={activePanel}
+                focusedPanel={focusedPanel}
                 generating={generating}
-                onPanelClick={setActivePanel}
+                onPanelClick={(idx) => { setActivePanel(idx); setFocusedPanel(idx); }}
+                onFocusPanel={setFocusedPanel}
                 onGenerate={generatePanel}
                 onRemoveBubble={removeBubble}
                 onRemoveSfx={removeSfx}
@@ -398,12 +401,14 @@ function TemplatePreview({ id, selected }: { id: TemplateId; selected: boolean }
 }
 
 // ─── Page Layout Grid ─────────────────────────────────────────────────────────
-function PageLayout({ template, panels, activePanel, generating, onPanelClick, onGenerate, onRemoveBubble, onRemoveSfx, onUpdateOverlayPosition, onPromptChange }: {
+function PageLayout({ template, panels, activePanel, focusedPanel, generating, onPanelClick, onFocusPanel, onGenerate, onRemoveBubble, onRemoveSfx, onUpdateOverlayPosition, onPromptChange }: {
   template: TemplateId;
   panels: Panel[];
   activePanel: number;
+  focusedPanel: number | null;
   generating: Record<number, boolean>;
   onPanelClick: (idx: number) => void;
+  onFocusPanel: (idx: number | null) => void;
   onGenerate: (idx: number) => void;
   onRemoveBubble: (panelIdx: number, bubbleId: string) => void;
   onRemoveSfx: (panelIdx: number) => void;
@@ -474,10 +479,13 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
     full_splash: { display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr' },
   };
 
+  const isFocused = (idx: number) => focusedPanel === idx;
+  const hasFocused = focusedPanel !== null;
+
   const renderPanels = (panelIndices: number[]) => panelIndices.map(idx => (
     <div
       key={idx}
-      className="comic-panel-container"
+      className={`comic-panel-container ${isFocused(idx) ? 'panel-focused' : ''} ${hasFocused && !isFocused(idx) ? 'panel-dimmed' : ''}`}
       onClick={() => onPanelClick(idx)}
       style={{
         position: 'relative',
@@ -491,6 +499,16 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
         overflow: 'hidden',
       }}
     >
+      {/* Focus Close Button */}
+      {isFocused(idx) && (
+        <button 
+          className="focus-close-btn"
+          onClick={(e) => { e.stopPropagation(); onFocusPanel(null); }}
+        >
+          ✕
+        </button>
+      )}
+
       {/* Halftone placeholder */}
       {!panels[idx]?.image_url && !generating[idx] && (
         <div className="halftone" style={{ position: 'absolute', inset: 0, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
@@ -595,7 +613,14 @@ function PageLayout({ template, panels, activePanel, generating, onPanelClick, o
   if (template === 'splash_2') {
     return (
       <div style={{ minHeight: '400px' }}>
-        <div className="comic-panel-container" style={{ position: 'relative', borderBottom: '3px solid var(--ink)', minHeight: '200px', background: panels[0]?.image_url ? `url(${panels[0].image_url}) center/cover` : 'var(--gray)', cursor: 'pointer', outline: activePanel === 0 ? '3px solid var(--accent)' : 'none', outlineOffset: '-3px', overflow: 'hidden' }} onClick={() => onPanelClick(0)}>
+        <div 
+          className={`comic-panel-container ${isFocused(0) ? 'panel-focused' : ''} ${hasFocused && !isFocused(0) ? 'panel-dimmed' : ''}`} 
+          style={{ position: 'relative', borderBottom: '3px solid var(--ink)', minHeight: '200px', background: panels[0]?.image_url ? `url(${panels[0].image_url}) center/cover` : 'var(--gray)', cursor: 'pointer', outline: activePanel === 0 ? '3px solid var(--accent)' : 'none', outlineOffset: '-3px', overflow: 'hidden' }} 
+          onClick={() => onPanelClick(0)}
+        >
+          {isFocused(0) && (
+            <button className="focus-close-btn" onClick={(e) => { e.stopPropagation(); onFocusPanel(null); }}>✕</button>
+          )}
           {!panels[0]?.image_url && !generating[0] && (
             <div className="halftone" style={{ position: 'absolute', inset: 0, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--midgray)', fontFamily: 'var(--font-tag)' }}>Panel 1</span>
