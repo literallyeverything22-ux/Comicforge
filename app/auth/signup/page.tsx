@@ -29,8 +29,11 @@ export default function SignupPage() {
         password,
       });
 
-      if (signupError) throw signupError;
-      if (!data.user) throw new Error('Signup failed');
+      if (signupError) {
+        console.error('Supabase Auth Error:', signupError);
+        throw signupError;
+      }
+      if (!data.user) throw new Error('Signup failed - no user returned');
 
       // 2. Create profile
       const { error: profileError } = await supabase
@@ -65,6 +68,17 @@ export default function SignupPage() {
             Create comics with AI — no drawing skills required
           </p>
         </div>
+
+        {/* DEV BYPASS BANNER */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-6 p-4 text-center" style={{ background: '#fef3c7', border: '2px dashed #d97706', borderRadius: '4px' }}>
+            <p className="font-bold text-sm" style={{ color: '#b45309', marginBottom: '0.5rem' }}>DEVELOPMENT MODE ACTIVE</p>
+            <p className="text-xs mb-3" style={{ color: '#d97706' }}>Local Auth is mocked. You can skip signup/login.</p>
+            <Link href="/dashboard" className="btn-secondary justify-center w-full" style={{ padding: '0.5rem' }}>
+              Skip Login {"->"} Go to Dashboard 
+            </Link>
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="ink-border bg-white p-8">

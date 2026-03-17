@@ -6,7 +6,13 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || supabaseUrl === 'your_supabase_url_here' || !supabaseKey) {
+  // Skip auth checks if Supabase is not configured or we are in local development
+  if (
+    process.env.NODE_ENV === 'development' ||
+    !supabaseUrl || 
+    supabaseUrl === 'your_supabase_url_here' || 
+    !supabaseKey
+  ) {
     return NextResponse.next({ request });
   }
 
