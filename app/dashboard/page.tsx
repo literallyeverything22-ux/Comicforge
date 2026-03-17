@@ -81,7 +81,8 @@ function NewComicButton({ userId }: { userId: string }) {
       'use server';
       const { createClient: createSupabase } = await import('@/lib/supabase/server');
       const supabase = createSupabase();
-      const { data } = await supabase
+      
+      const { data, error } = await supabase
         .from('projects')
         .insert({
           user_id: userId,
@@ -92,6 +93,8 @@ function NewComicButton({ userId }: { userId: string }) {
         })
         .select('id')
         .single();
+
+      if (error) console.error('Error creating project:', error);
 
       if (data?.id) {
         const { redirect: serverRedirect } = await import('next/navigation');
